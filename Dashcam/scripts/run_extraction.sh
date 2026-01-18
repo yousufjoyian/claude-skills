@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configuration - Movie_F ONLY
 CATEGORY="Movie_F"
-DESKTOP_SOURCE="/mnt/windows/Users/yousu/Desktop/CARDV/Movie_F"
+DESKTOP_SOURCE="/mnt/sdcard/CARDV/Movie_F"
 FRAMES_OUTPUT="/home/yousuf/GoogleDrive/PROJECTS/INVESTIGATION/DASHCAM/FRAMES_CLIPS/Movie_F&R_MotionSamples"
 WORK_DIR="/home/yousuf/PROJECTS/PeopleNet/FrameExtraction"
 STAGING_DIR="/home/yousuf/PROJECTS/PeopleNet/Staging/${CATEGORY}_Batch"
@@ -48,8 +48,8 @@ fi
 echo "  ✓ ffmpeg available"
 
 # Check Python
-if ! /home/yousuf/PROJECTS/ExtractedGPS/.venv/bin/python3 --version &>/dev/null; then
-    echo "❌ ERROR: Python not found at expected location"
+if ! python3 --version &>/dev/null; then
+    echo "❌ ERROR: Python3 not found"
     exit 1
 fi
 echo "  ✓ Python available"

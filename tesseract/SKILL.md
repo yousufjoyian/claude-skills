@@ -167,3 +167,8 @@ Firebase (auth, firestore, functions)
     ↓
 Gemini API (via geminiProxy function)
 ```
+
+## A2UI Embedding
+
+For embedding Tesseract in the A2UI panel, use the generic `a2ui-embed` skill.
+See: `~/local_workspaces/skills/a2ui-embed/SKILL.md`

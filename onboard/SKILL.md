@@ -1,45 +1,35 @@
 # Onboard Skill
 
-**Triggers:** "onboard", "get up to speed", "catch me up", "what's the context", "where were we"
+**Triggers:** "onboard", "get up to speed", "catch me up", "where were we"
 
 ## Purpose
 
-Quickly onboard to any project by reading standardized documentation and presenting a summary.
+Quickly onboard to any project by reading CONTEXT.md and presenting current state.
 
 ## Protocol
-
-When triggered, execute these steps IN ORDER:
 
 ### Step 1: Identify Project
 
 Determine which project to onboard to:
+- If in a TriClaude terminal: use the project from terminal context
 - If user specifies: use that project
-- If in a TriClaude terminal: use the project from the terminal's context
 - If ambiguous: ask user
 
-### Step 2: Read Project Documentation
-
-Read these files in order (skip if doesn't exist):
+### Step 2: Read Context (MANDATORY)
 
 ```bash
-# Core project docs
-cat ~/local_workspaces/<project>/.claude/PROJECT.md
-cat ~/local_workspaces/<project>/.claude/CONVENTIONS.md
-cat ~/local_workspaces/<project>/CLAUDE.md
-
-# Current session context (MOST IMPORTANT)
-cat ~/local_workspaces/<project>/.claude/sessions/latest.md
+# THE ONE FILE - contains everything needed
+cat ~/local_workspaces/<project>/.claude/CONTEXT.md
 ```
 
-### Step 3: Quick Codebase Scan
+This ~250 token file has: goal, status, changed files, decisions, blockers, resume instructions.
+
+### Step 3: Quick Git Check
 
 ```bash
-# Get structure overview
-ls -la ~/local_workspaces/<project>/
-find ~/local_workspaces/<project> -name "*.md" -type f 2>/dev/null | head -10
-
-# Check git status
-cd ~/local_workspaces/<project> && git status && git log --oneline -5
+cd ~/local_workspaces/<project>
+git status
+git log --oneline -3
 ```
 
 ### Step 4: Present Summary
@@ -49,60 +39,55 @@ Output a concise summary:
 ```
 ## Project: <name>
 
-**Purpose:** [1-2 sentences from PROJECT.md]
+**Goal:** [from CONTEXT.md]
 
-**Stack:** [Key technologies]
+**Status:**
+- [x] Done: [count] tasks
+- [→] Active: [current task]
+- [ ] Next: [upcoming]
 
-**Current State:** [From sessions/latest.md]
-- Last worked on: [date]
-- In progress: [tasks]
-- Next steps: [priorities]
+**Recent:** [from git log]
 
-**Recent Changes:**
-[From git log]
-
-**Ready to continue.** What would you like to work on?
+**Ready to continue.** [Resume instructions from CONTEXT.md]
 ```
 
-## If Documentation Missing
+## Only Read More If Needed
 
-If `.claude/` directory doesn't exist:
+| File | When to Read |
+|------|--------------|
+| `reference/PROJECT.md` | If confused about architecture |
+| `reference/CONVENTIONS.md` | If writing new code |
+| `reference/TROUBLESHOOTING.md` | If hitting known issues |
+| Root `CLAUDE.md` | If exists and project-specific |
 
-1. Inform user: "This project doesn't have standard documentation yet."
-2. Offer: "Would you like me to initialize it? (run `init project`)"
-3. Proceed with basic exploration:
-   - Read any existing README.md
-   - Check package.json or equivalent
+## If CONTEXT.md Missing
+
+If `.claude/CONTEXT.md` doesn't exist:
+
+1. Check for legacy `.claude/sessions/latest.md` (migrate if found)
+2. Inform user: "No context file found."
+3. Offer: "Run 'init project' to set up standard structure?"
+4. Proceed with basic exploration:
+   - Read README.md if exists
+   - Check package.json
    - Scan directory structure
-
-## Quick Reference
-
-| File | Purpose | Priority |
-|------|---------|----------|
-| `sessions/latest.md` | Current context | **READ FIRST** |
-| `PROJECT.md` | Architecture overview | High |
-| `CONVENTIONS.md` | Code style | Medium |
-| `TROUBLESHOOTING.md` | Known issues | As needed |
-| Root `CLAUDE.md` | Agent instructions | High |
 
 ## Example Output
 
 ```
 ## Project: triclaude
 
-**Purpose:** Multi-terminal console with Claude voice advisor for managing multiple projects simultaneously.
+**Goal:** Implement token-efficient context save system
 
-**Stack:** React, TypeScript, Vite, Python (backend), tmux, ttyd
+**Status:**
+- [x] Done: 5 tasks (save button, skill update, folder restructure)
+- [→] Active: sync changes to runtime cache
+- [ ] Next: test save button end-to-end
 
-**Current State:**
-- Last session: 2026-01-13
-- Completed: Fixed instruction delivery, added loading spinners
-- In progress: None
-- Next: Testing GitHub integration
+**Recent:**
+- f566c95 v4.2.0: Per-terminal A2UI, text-based consigliere
+- 7f03549 feat: Add fullscreen mode
 
-**Recent Changes:**
-- cd79fa9 v3.1.0: Add loading indicators, GitHub integration
-- d991642 v3.0.0: Restore project picker
-
-**Ready to continue.** What would you like to work on?
+**Ready to continue.** ShortcutBar has new blue save button.
+Need to test it sends "save context" correctly.
 ```

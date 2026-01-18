@@ -15,7 +15,7 @@ class FrameExtractor:
         self.video_list = Path(video_list_file)
         self.category = category
         self.worker_id = worker_id
-        self.desktop_source = Path(f"/mnt/windows/Users/yousu/Desktop/CARDV/{category}")
+        self.desktop_source = Path(f"/mnt/sdcard/CARDV/{category}")
         self.output_dir = Path("/home/yousuf/GoogleDrive/PROJECTS/INVESTIGATION/DASHCAM/FRAMES_CLIPS/Movie_F&R_MotionSamples")
         self.staging_dir = Path(f"/home/yousuf/PROJECTS/PeopleNet/Staging/{category}_Worker{worker_id}")
         self.staging_dir.mkdir(parents=True, exist_ok=True)

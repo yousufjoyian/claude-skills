@@ -21,7 +21,7 @@ process_batch() {
 
     echo "[Worker $worker_id] Processing $batch_name..."
 
-    /home/yousuf/PROJECTS/ExtractedGPS/.venv/bin/python3 \
+    python3 \
         "$SCRIPT_DIR/extract_frames_worker.py" \
         "$batch_file" \
         "$CATEGORY" \

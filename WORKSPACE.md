@@ -8,72 +8,86 @@ You are the **Worker Executor** under Grand Schemer.
 
 ## AGENT ONBOARDING PROTOCOL (START HERE)
 
-**CRITICAL: Every new agent session should follow this protocol first.**
+**CRITICAL: Every new agent session MUST auto-read context on startup.**
 
-### Step 1: Identify Project Context
+### Auto-Read on Session Start (MANDATORY)
 
-When starting a session, determine which project you're working on:
-- Check if launched from TriClaude terminal (context provided)
-- Check current working directory
-- Ask user if unclear
-
-### Step 2: Read Project Documentation
-
-For any project in `~/local_workspaces/<project>/`:
+**FIRST ACTION** when starting any session in a project:
 
 ```bash
-# ALWAYS read these first (in order)
-cat ~/local_workspaces/<project>/.claude/sessions/latest.md  # Current context
-cat ~/local_workspaces/<project>/.claude/PROJECT.md           # Architecture
-cat ~/local_workspaces/<project>/CLAUDE.md                    # Instructions
+# Read this ONE file - contains everything needed to continue
+cat ~/local_workspaces/<project>/.claude/CONTEXT.md
 ```
 
-### Step 3: Quick Status Check
+This file is ~250 tokens and contains: goal, status, changed files, decisions, blockers, and resume instructions.
+
+### Only Read More If Needed
+
+- `~/local_workspaces/<project>/.claude/reference/PROJECT.md` - Architecture (if confused)
+- `~/local_workspaces/<project>/CLAUDE.md` - Project instructions (if exists)
+
+### Quick Status Check
 
 ```bash
 cd ~/local_workspaces/<project>
 git status
-git log --oneline -5
+git log --oneline -3
 ```
 
-### Triggers for Onboarding
-Say: "onboard", "get up to speed", "catch me up", "where were we"
+### Triggers for Full Onboarding
+Say: "onboard", "get up to speed", "catch me up"
 → Executes full onboard skill: `~/local_workspaces/skills/onboard/SKILL.md`
 
 ---
 
 ## SESSION CONTEXT MANAGEMENT
 
-### Saving Session Context
+### Saving Context (Manual - Use Save Button)
 
-**IMPORTANT:** Before ending a session or major handoff, save context:
+**Triggers:** "save context", "save session", "handoff"
+**Shortcut:** Blue save button (💾) in TriClaude shortcut bar
 
-**Triggers:** "save session", "handoff", "end session", "save context"
-
-This saves current work to: `<project>/.claude/sessions/latest.md`
+This saves current work to: `<project>/.claude/CONTEXT.md`
 
 Full protocol: `~/local_workspaces/skills/session-save/SKILL.md`
 
-### What Gets Saved
-- Summary of accomplishments
-- Files modified
-- Key decisions and rationale
-- In-progress work
-- Next steps
+### CONTEXT.md Format (~250 tokens)
 
-### Standard Project Documentation Structure
+```markdown
+# <project> | YYYY-MM-DD
 
-Every project should have:
+## Goal
+[Current objective - one line]
+
+## Status
+- [x] Completed task
+- [→] Active: current task
+- [ ] Next: upcoming task
+
+## Changed
+- `file.ts:line` - what changed
+
+## Decided
+- Topic: decision (rationale)
+
+## Blocked
+- [none] or issue → workaround
+
+## Resume
+Specific actionable instructions to continue.
+```
+
+### Project Documentation Structure
+
 ```
 project/
 ├── .claude/
-│   ├── PROJECT.md          # Architecture, purpose, tech stack
-│   ├── CONVENTIONS.md      # Code style, patterns
-│   ├── TROUBLESHOOTING.md  # Known issues & fixes
-│   └── sessions/
-│       ├── latest.md       # CURRENT CONTEXT (read first!)
-│       └── archive/        # Historical sessions
-├── CLAUDE.md               # Project-specific agent instructions
+│   ├── CONTEXT.md          # CURRENT STATE (auto-read on start!)
+│   ├── reference/
+│   │   ├── PROJECT.md      # Architecture (read when confused)
+│   │   └── CONVENTIONS.md  # Code style (read when writing)
+│   └── history/            # Archived contexts (rarely read)
+├── CLAUDE.md               # Project-specific instructions
 └── [project files...]
 ```
 
@@ -90,9 +104,51 @@ Full protocol: `~/local_workspaces/skills/project-init/SKILL.md`
 
 | Skill | Location | Triggers |
 |-------|----------|----------|
+| Save Context | `skills/session-save/SKILL.md` | "save context", "save session", "handoff" |
 | Onboard | `skills/onboard/SKILL.md` | "onboard", "get up to speed" |
-| Session Save | `skills/session-save/SKILL.md` | "save session", "handoff" |
 | Project Init | `skills/project-init/SKILL.md` | "init project", "setup docs" |
+| Context Extract | `skills/context-extract/SKILL.md` | "extract context", "dump context" |
+| Visual Plan | `skills/visual-plan/SKILL.md` | "visualize plan", "show plan", "vplan" |
+| Synopsis | `skills/synopsis/SKILL.md` | "show synopsis", "synopsis", "session summary" |
+| A2UI Embed | `skills/a2ui-embed/SKILL.md` | "show in a2ui", "visualize", "embed" |
+
+**Save Context vs Context Extract:**
+- `save context`: Quick ~250 token summary to `CONTEXT.md` (use this!)
+- `context-extract`: Full conversation dump to `context/` (verbose, rarely needed)
+
+---
+
+## GIT SKILLS
+
+| Skill | Location | Triggers |
+|-------|----------|----------|
+| GitHub | `skills/github/SKILL.md` | "pull", "clone", "push", "get repo" |
+| Git Commit | `skills/git-commit/SKILL.md` | "commit", "commit changes", "commit and push" |
+
+**Workflow:** Use `commit and push` for full workflow (commit + push in one step). Use `commit` alone for local-only commits.
+
+---
+
+## A2UI EMBED SKILL
+
+**Full docs:** `~/local_workspaces/skills/a2ui-embed/SKILL.md`
+
+**Triggers:** "open in a2ui", "show in panel", "embed", "a2ui"
+
+**Auto-detects project from current working directory.** No need to specify app name.
+
+| Project | Path | Port |
+|---------|------|------|
+| tesseract | `/home/yousuf/local_workspaces/tesseract` | 3000 |
+| triclaude | `/home/yousuf/local_workspaces/triclaude` | 3001 |
+
+**Flow:**
+1. Detect project from `pwd`
+2. Check if service running (curl)
+3. Start service if not running
+4. Embed in A2UI panel
+
+Critical: must use `sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"` for localhost iframes to work.
 
 ---
 
@@ -330,15 +386,18 @@ HARD GUARDS (one-liners)
 
 ## A2UI VISUALIZATION (TriClaude Console)
 
-This terminal supports **A2UI visualization**. When asked to visualize, show, display, or chart something, write HTML directly to the stream log file.
+This terminal supports **A2UI visualization**. When asked to visualize, show, display, or chart something, write HTML directly to the A2UI log file.
 
-**CRITICAL**: Write to `/home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/a2ui_input.log`
+**IMPORTANT**: The A2UI log path is **dynamic per-terminal**. Look for `A2UI VISUALIZATION:` in your session startup message to find the correct path. It will be something like:
+```
+/home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/terminals/<terminal_id>/a2ui_input.log
+```
 
 ### How to Output A2UI
 
-Use this exact pattern:
+Use this exact pattern (replace `$A2UI_LOG` with the path from your startup message):
 ```bash
-cat << 'A2UI_EOF' >> /home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/a2ui_input.log
+cat << 'A2UI_EOF' >> $A2UI_LOG
 <!-- A2UI:START -->
 <!DOCTYPE html>
 <html>
@@ -353,11 +412,12 @@ A2UI_EOF
 
 Or for simple visualizations:
 ```bash
-echo '<!-- A2UI:START --><html>...</html><!-- A2UI:END -->' >> /home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/a2ui_input.log
+echo '<!-- A2UI:START --><html>...</html><!-- A2UI:END -->' >> $A2UI_LOG
 ```
 
 **Key points:**
-- Append (`>>`) to `/home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/a2ui_input.log`
+- Use the path from your `A2UI VISUALIZATION:` startup message
+- Append (`>>`) to the log file
 - The sidecar watches this file and broadcasts to the UI
 - Do NOT echo to terminal - it gets intercepted by Claude Code's rendering
 
@@ -368,7 +428,7 @@ echo '<!-- A2UI:START --><html>...</html><!-- A2UI:END -->' >> /home/yousuf/Goog
 - JavaScript OK, CDN libraries OK (Chart.js, D3, Mermaid)
 
 ### Trigger Words
-When user says: "show me", "visualize", "display", "chart", "render", "dashboard" → write A2UI HTML to stream.log.
+When user says: "show me", "visualize", "display", "chart", "render", "dashboard" → write A2UI HTML to your terminal's log file.
 
 ---
 
@@ -423,7 +483,7 @@ cd /home/yousuf/local_workspaces/<repo> && git pull
 **When "pull triclaude" is called, ALWAYS:**
 1. `cd /home/yousuf/local_workspaces/triclaude && git pull`
 2. `rsync -av --exclude=node_modules --exclude=package-lock.json --exclude=dist --exclude=.git /home/yousuf/local_workspaces/triclaude/ /home/yousuf/dev/cache/triclaude/`
-3. `touch /home/yousuf/dev/cache/triclaude/src/App.tsx` (trigger hot reload)
+3. `cd /home/yousuf/dev/cache/triclaude && npx vite build` (rebuild production bundle, then refresh browser)
 4. Check all 4 services are running
 5. Get Tailscale IP: `ip -4 addr show tailscale0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}'`
 6. Output URLs:

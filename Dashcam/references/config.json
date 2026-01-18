@@ -12,7 +12,7 @@
     "frames_per_video": 3
   },
   "paths": {
-    "desktop_source": "/mnt/windows/Users/yousu/Desktop/CARDV/Movie_F",
+    "desktop_source": "/mnt/sdcard/CARDV/Movie_F",
     "frames_output": "/home/yousuf/GoogleDrive/PROJECTS/INVESTIGATION/DASHCAM/FRAMES_CLIPS/Movie_F&R_MotionSamples",
     "work_dir": "/home/yousuf/PROJECTS/PeopleNet/FrameExtraction",
     "staging_dir": "/home/yousuf/PROJECTS/PeopleNet/Staging",

@@ -145,6 +145,14 @@ Receiving objects: 100% (245/245), 1.2 MiB | 5.00 MiB/s, done.
 Done: /home/yousuf/local_workspaces/triclaude/
 ```
 
+## Related Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `git-commit` | Local commits with smart staging and message crafting |
+
+**Workflow:** Use `git-commit` skill for staging and committing locally, then this skill for push/pull.
+
 ## Troubleshooting
 
 | Issue | Solution |
