@@ -1,11 +1,11 @@
 ---
 name: synopsis
-description: Generate a comprehensive session synopsis in the A2UI panel
+description: Generate a feature-focused synopsis for tracking and documentation
 ---
 
 # Synopsis Skill
 
-Generate a comprehensive visual synopsis of the current session in the A2UI panel.
+Generate a **feature-focused** synopsis that serves as lightweight feature management and documentation.
 
 ## Trigger Phrases
 
@@ -15,9 +15,45 @@ Generate a comprehensive visual synopsis of the current session in the A2UI pane
 - "session summary" - Display in A2UI panel only
 - "export synopsis" - Display in A2UI AND save to project folder
 
+## Naming Convention
+
+**Critical:** Synopsis should be labeled by the FEATURE being worked on, not just "Session Synopsis".
+
+### Title Format
+```
+[Project] | [Feature Name]
+```
+
+Examples:
+- `TriClaude | Fullscreen Shortcuts`
+- `Tesseract | Voice Commands`
+- `API Server | Rate Limiting`
+
+### Export Filename Format
+```
+synopsis_[feature-slug]_[date].html
+```
+
+Examples:
+- `synopsis_fullscreen-shortcuts_2026-01-17.html`
+- `synopsis_voice-commands_2026-01-17.html`
+- `synopsis_rate-limiting_2026-01-17.html`
+
+## Feature States
+
+Track the feature lifecycle with these states:
+
+| State | Icon | Color | Description |
+|-------|------|-------|-------------|
+| Planning | 📋 | Blue | Designing/researching |
+| In Progress | 🔨 | Yellow | Actively coding |
+| Testing | 🧪 | Purple | Verifying/debugging |
+| Complete | ✅ | Green | Done, committed |
+| Blocked | 🚫 | Red | Waiting on dependency |
+
 ## What to Include
 
-The synopsis should provide a comprehensive overview at the **goal/objective level**:
+The synopsis should provide a comprehensive overview at the **feature/objective level**:
 
 ### 1. Current Goal
 - What is the main objective of this session?
@@ -172,13 +208,13 @@ body {
       <path d="M3 9h18M9 21V9"/>
     </svg>
     <div>
-      <h1>Session Synopsis</h1>
-      <div class="timestamp">Generated: [TIMESTAMP]</div>
+      <h1>[PROJECT] | [FEATURE_NAME]</h1>
+      <div class="timestamp">[FEATURE_STATE_ICON] [FEATURE_STATE] · [TIMESTAMP]</div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">🎯 Current Goal</div>
+    <div class="section-title">🎯 Feature Goal</div>
     <div class="card">
       <div class="goal-text">[GOAL_DESCRIPTION]</div>
     </div>
@@ -235,44 +271,96 @@ body {
 A2UI_EOF
 ```
 
-## Step 4: Export to Project Folder (if "export synopsis")
+## Export Button in Synopsis HTML
 
-If user said "export synopsis", also save the HTML to the project's `.claude/` folder:
+The synopsis HTML should include an export button that saves to the project folder via API.
 
-```bash
-# Get project path from current working directory
-PROJECT_PATH=$(pwd)
+Add this button and script to the HTML header section:
 
-# Create .claude folder if it doesn't exist
-mkdir -p "$PROJECT_PATH/.claude"
+```html
+<button id="exportBtn" onclick="exportSynopsis()" style="
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: #f59e0b;
+  color: #0f172a;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+  </svg>
+  Export
+</button>
 
-# Save synopsis HTML
-cat << 'SYNOPSIS_EOF' > "$PROJECT_PATH/.claude/synopsis.html"
-[SAME HTML CONTENT AS ABOVE]
-SYNOPSIS_EOF
-
-echo "Synopsis exported to $PROJECT_PATH/.claude/synopsis.html"
+<script>
+async function exportSynopsis() {
+  const btn = document.getElementById('exportBtn');
+  btn.textContent = 'Saving...';
+  try {
+    const html = document.documentElement.outerHTML;
+    const res = await fetch('http://' + location.hostname + ':7690/api/save-synopsis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectPath: '[PROJECT_PATH]',  // Replace with actual project path
+        html: html
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.textContent = '✓ Saved';
+      btn.style.background = '#4ade80';
+    } else {
+      btn.textContent = 'Error';
+      btn.style.background = '#ef4444';
+    }
+  } catch (e) {
+    btn.textContent = 'Error';
+    btn.style.background = '#ef4444';
+  }
+  setTimeout(() => {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export';
+    btn.style.background = '#f59e0b';
+  }, 2000);
+}
+</script>
 ```
 
-This allows the synopsis to be:
-- Viewed offline
-- Shared with others
-- Committed to git for project history
+**Important:** Replace `[PROJECT_PATH]` with the actual project path (e.g., `/home/yousuf/local_workspaces/triclaude`)
 
 ## Key Guidelines
 
-1. **Be comprehensive** - Include all sections, even if some are brief
-2. **Use actual data** - Pull from CONTEXT.md, git status, and conversation context
-3. **Keep it scannable** - Use icons, colors, and clear hierarchy
-4. **Timestamp it** - Always include when the synopsis was generated
-5. **Focus on objectives** - This is goal-level, not task-level detail
-6. **Export on request** - Only save to file when "export synopsis" is triggered
+1. **Name by feature** - Title should identify the feature, not just "Session Synopsis"
+2. **Track feature state** - Always show Planning/In Progress/Testing/Complete/Blocked
+3. **Be comprehensive** - Include all sections, even if some are brief
+4. **Use actual data** - Pull from CONTEXT.md, git status, and conversation context
+5. **Keep it scannable** - Use icons, colors, and clear hierarchy
+6. **Timestamp it** - Always include when the synopsis was generated
+7. **Export with feature name** - Filename should include feature slug
+
+## Export File Location
+
+When exporting, save to:
+```
+<project>/.claude/synopsis_[feature-slug]_[date].html
+```
+
+Also keep a `synopsis.html` symlink or copy pointing to the latest export for quick access.
 
 ## Example Output Structure
 
 ```
-Session Synopsis
-├── Current Goal: [Main objective]
+[Project] | [Feature Name]
+✅ Complete · 2026-01-17
+├── Feature Goal: [What this feature does]
 ├── Progress
 │   ├── ✓ Completed: [List]
 │   ├── → In Progress: [Current]
@@ -285,3 +373,11 @@ Session Synopsis
     ├── 1. [Immediate action]
     └── 2. [Follow-up action]
 ```
+
+## Feature Management Benefits
+
+By naming synopses after features:
+- **History** - Browse `.claude/` folder to see all features worked on
+- **Documentation** - Each synopsis documents a feature's implementation
+- **Handoff** - New sessions can review past feature synopses for context
+- **Tracking** - See feature states at a glance (Complete, In Progress, etc.)
