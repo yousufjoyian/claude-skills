@@ -9,10 +9,11 @@ Generate a comprehensive visual synopsis of the current session in the A2UI pane
 
 ## Trigger Phrases
 
-- "show synopsis"
-- "synopsis"
-- "show status"
-- "session summary"
+- "show synopsis" - Display in A2UI panel only
+- "synopsis" - Display in A2UI panel only
+- "show status" - Display in A2UI panel only
+- "session summary" - Display in A2UI panel only
+- "export synopsis" - Display in A2UI AND save to project folder
 
 ## What to Include
 
@@ -234,6 +235,30 @@ body {
 A2UI_EOF
 ```
 
+## Step 4: Export to Project Folder (if "export synopsis")
+
+If user said "export synopsis", also save the HTML to the project's `.claude/` folder:
+
+```bash
+# Get project path from current working directory
+PROJECT_PATH=$(pwd)
+
+# Create .claude folder if it doesn't exist
+mkdir -p "$PROJECT_PATH/.claude"
+
+# Save synopsis HTML
+cat << 'SYNOPSIS_EOF' > "$PROJECT_PATH/.claude/synopsis.html"
+[SAME HTML CONTENT AS ABOVE]
+SYNOPSIS_EOF
+
+echo "Synopsis exported to $PROJECT_PATH/.claude/synopsis.html"
+```
+
+This allows the synopsis to be:
+- Viewed offline
+- Shared with others
+- Committed to git for project history
+
 ## Key Guidelines
 
 1. **Be comprehensive** - Include all sections, even if some are brief
@@ -241,6 +266,7 @@ A2UI_EOF
 3. **Keep it scannable** - Use icons, colors, and clear hierarchy
 4. **Timestamp it** - Always include when the synopsis was generated
 5. **Focus on objectives** - This is goal-level, not task-level detail
+6. **Export on request** - Only save to file when "export synopsis" is triggered
 
 ## Example Output Structure
 
