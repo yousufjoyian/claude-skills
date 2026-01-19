@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Save current work state to `.claude/CONTEXT.md` for seamless continuation in future sessions.
+Save current work state to `.claude/CONTEXT.md` by **MERGING** with existing context, not overwriting. Preserves project-level information while updating session-specific work.
 
 ## Output File
 
@@ -12,142 +12,206 @@ Save current work state to `.claude/CONTEXT.md` for seamless continuation in fut
 <project>/.claude/CONTEXT.md
 ```
 
+## CRITICAL: Merge, Don't Overwrite
+
+**NEVER** start from scratch. Always:
+1. READ existing CONTEXT.md first
+2. PRESERVE project-level sections (Goal, Project Overview, Key Components)
+3. UPDATE session-specific sections (Recent Work, Changed This Session)
+4. APPEND new decisions to existing ones
+
 ## Format (Strict Template)
 
 ```markdown
-# <project> | YYYY-MM-DD
+# <project> | YYYY-MM-DD HH:MM
 
 ## Goal
-[Current objective - one line max]
+[Project's main purpose - preserve from existing unless project changed]
 
-## Status
-- [x] Completed task
-- [→] Active: current task description
+## Project Overview
+[Brief description - preserve from existing, only update if fundamentally changed]
+See `.claude/reference/PROJECT.md` for full architecture.
+
+## Key Components
+[Major parts of project - preserve from existing, add new components only]
+
+## Recent Work (This Session)
+- [x] Completed task from THIS session
+- [→] Active: current task
 - [ ] Next: upcoming task
 
-## Changed
-- `path/file.ts:line` - what changed
+## Changed This Session
+- `path/file.ts` - what changed
 - `path/new-file.ts` - NEW: purpose
 
-## Decided
-- Topic: decision (why in parentheses)
+## Key Decisions
+[APPEND to existing decisions, don't replace]
+- New decision: rationale (date if helpful)
 
 ## Blocked
-- Issue description → workaround if any
+- Issue → workaround
 - [none] if no blockers
 
 ## Resume
-Specific actionable instructions to continue. Reference exact files
-and line numbers. 2-3 sentences max.
+Specific actionable next steps. 2-3 sentences max.
 ```
 
-## Token Budget
-
-| Section | Target | Notes |
-|---------|--------|-------|
-| Header | ~10 | Project name + date |
-| Goal | ~15 | One line |
-| Status | ~40 | 3-5 items |
-| Changed | ~50 | File references only |
-| Decided | ~60 | Key choices with rationale |
-| Blocked | ~20 | Or "[none]" |
-| Resume | ~50 | Actionable steps |
-| **Total** | **~250** | Max ~300 |
-
-## Writing Rules
-
-1. **One line per item** - forces concision
-2. **Reference, don't embed** - `file.ts:123` not code blocks
-3. **Decisions WITH rationale** - "X over Y (because Z)"
-4. **Status symbols** - `[x]` done, `[→]` active, `[ ]` pending
-5. **Resume is actionable** - specific next steps, not vague "continue work"
+**CRITICAL:** The timestamp (YYYY-MM-DD HH:MM) determines which files need review on next session start.
 
 ## Protocol
 
-### Step 1: Identify Project
-
-```bash
-# Use current working directory
-pwd
-# Or ask user if ambiguous
-```
-
-### Step 2: Gather Information
+### Step 1: Read Existing Context
 
 ```bash
 cd ~/local_workspaces/<project>
 
-# Check what changed
+# ALWAYS read existing context first
+cat .claude/CONTEXT.md 2>/dev/null
+```
+
+**Extract and preserve:**
+- Goal (unless project fundamentally changed)
+- Project Overview section
+- Key Components section
+- Existing Key Decisions (append new ones)
+
+### Step 2: Gather Session Information
+
+```bash
+# Check what changed THIS session
 git status
 git diff --stat
 
 # Recent commits
 git log --oneline -5
-
-# Current branch
-git branch --show-current
 ```
 
-### Step 3: Archive Previous Context (if exists)
+### Step 3: Archive Previous Context
 
 ```bash
 mkdir -p ~/local_workspaces/<project>/.claude/history
 
 if [ -f ~/local_workspaces/<project>/.claude/CONTEXT.md ]; then
-    mv ~/local_workspaces/<project>/.claude/CONTEXT.md \
+    cp ~/local_workspaces/<project>/.claude/CONTEXT.md \
        ~/local_workspaces/<project>/.claude/history/$(date +%Y-%m-%d_%H%M).md
 fi
 ```
 
-### Step 4: Generate CONTEXT.md
+### Step 4: Generate Merged CONTEXT.md
 
-Write the file using the strict template above. Be concise.
+**DO:**
+- Keep existing Goal, Project Overview, Key Components
+- Replace "Recent Work" with THIS session's work only
+- Replace "Changed This Session" with THIS session's changes
+- APPEND new decisions to Key Decisions
+- Update Resume with current next steps
+- Update timestamp
+
+**DON'T:**
+- Delete project-level context
+- Lose historical decisions
+- Narrow scope to just current task
 
 ### Step 5: Confirm
 
 ```
 Context saved: <project>/.claude/CONTEXT.md
 
-Summary:
+Preserved:
 - Goal: [goal]
-- Status: [x] done, [→] active, [ ] pending counts
-- Files: [count] changed
+- Project Overview: [kept/updated]
+- Key Components: [count] items
+- Existing Decisions: [count] preserved
+
+Updated:
+- Recent Work: [count] items from this session
+- Changed: [count] files
+- New Decisions: [count] added
 
 Previous context archived to: .claude/history/YYYY-MM-DD_HHMM.md
 ```
 
-## Example Output
+## Example: Merging Context
 
+**Existing CONTEXT.md:**
 ```markdown
-# triclaude | 2026-01-16
+# myproject | 2026-01-17 14:00
 
 ## Goal
-Implement token-efficient context save system for session continuity
+Build a CLI tool for managing dotfiles
 
-## Status
-- [x] Added save button to ShortcutBar
-- [x] Updated session-save skill format
-- [→] Active: updating root CLAUDE.md with auto-read
-- [ ] Next: migrate existing latest.md to CONTEXT.md
+## Project Overview
+Cross-platform dotfile manager with backup and sync. See PROJECT.md.
 
-## Changed
-- `src/components/ShortcutBar.tsx:3` - added Save icon import
-- `src/components/ShortcutBar.tsx:20` - added save context shortcut
-- `skills/session-save/SKILL.md` - REWRITE: new CONTEXT.md format
+## Key Components
+- **CLI**: Python Click at `src/cli/`
+- **Sync**: rsync wrapper at `src/sync/`
 
-## Decided
-- Single CONTEXT.md over multiple files (token efficiency)
-- Manual save button over auto-save (user control)
-- ~250 token budget (efficient but complete)
+## Recent Work (This Session)
+- [x] Added backup command
+- [→] Active: testing restore
+
+## Key Decisions
+- Click over argparse (better UX)
+- YAML config over JSON (comments allowed)
+```
+
+**After saving new session (added restore feature):**
+```markdown
+# myproject | 2026-01-18 10:30
+
+## Goal
+Build a CLI tool for managing dotfiles
+
+## Project Overview
+Cross-platform dotfile manager with backup and sync. See PROJECT.md.
+
+## Key Components
+- **CLI**: Python Click at `src/cli/`
+- **Sync**: rsync wrapper at `src/sync/`
+- **Restore**: New restore engine at `src/restore/`
+
+## Recent Work (This Session)
+- [x] Implemented restore command
+- [x] Added conflict resolution UI
+- [→] Active: writing tests for restore
+
+## Changed This Session
+- `src/restore/engine.py` - NEW: restore logic
+- `src/cli/commands.py` - added restore subcommand
+- `tests/test_restore.py` - NEW: restore tests
+
+## Key Decisions
+- Click over argparse (better UX)
+- YAML config over JSON (comments allowed)
+- Interactive conflict resolution over auto-overwrite (safer)
 
 ## Blocked
 - [none]
 
 ## Resume
-ShortcutBar now has blue save button sending "save context".
-Next: update root CLAUDE.md to auto-read .claude/CONTEXT.md on
-session start. Then restructure triclaude/.claude/ folder.
+Restore command implemented with conflict UI. Need to finish tests
+in test_restore.py, then update README with restore docs.
 ```
+
+Notice:
+- Goal, Overview preserved exactly
+- Key Components got ONE new item added
+- Recent Work replaced (only THIS session)
+- Key Decisions APPENDED (new decision added)
+
+## What to Preserve vs Replace
+
+| Section | Action |
+|---------|--------|
+| Goal | PRESERVE (unless project changed) |
+| Project Overview | PRESERVE |
+| Key Components | PRESERVE + ADD new ones |
+| Recent Work | REPLACE (this session only) |
+| Changed This Session | REPLACE (this session only) |
+| Key Decisions | PRESERVE + APPEND new |
+| Blocked | REPLACE (current state) |
+| Resume | REPLACE (current next steps) |
 
 ## What NOT to Include
 
@@ -155,4 +219,4 @@ session start. Then restructure triclaude/.claude/ folder.
 - Full error messages (summarize)
 - Conversation history (just outcomes)
 - Speculation about future work
-- Timestamps beyond the date
+- Work from previous sessions in "Recent Work"

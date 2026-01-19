@@ -21,10 +21,36 @@ cat ~/local_workspaces/<project>/.claude/CONTEXT.md
 
 This file is ~250 tokens and contains: goal, status, changed files, decisions, blockers, and resume instructions.
 
+### Check What Changed Since Context Was Saved
+
+CONTEXT.md header includes timestamp: `# <project> | YYYY-MM-DD HH:MM`
+
+**Compare against file modifications:**
+```bash
+cd ~/local_workspaces/<project>
+
+# Get context timestamp (use file mtime as backup)
+CONTEXT_FILE=".claude/CONTEXT.md"
+CONTEXT_MTIME=$(stat -c %Y "$CONTEXT_FILE")
+
+# Find source files modified AFTER context was saved
+echo "Files modified since context was saved:"
+find src/ -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" \) -newer "$CONTEXT_FILE" 2>/dev/null
+
+# Or check via git
+git log --oneline --since="$(stat -c %y "$CONTEXT_FILE" | cut -d'.' -f1)"
+```
+
+**Decision logic:**
+- **No files modified** → Trust CONTEXT.md completely, skip exploration
+- **Files modified** → Read only those specific files to understand changes
+- **Many files modified** → Someone else worked on project, do full onboard
+
 ### Only Read More If Needed
 
 - `~/local_workspaces/<project>/.claude/reference/PROJECT.md` - Architecture (if confused)
 - `~/local_workspaces/<project>/CLAUDE.md` - Project instructions (if exists)
+- **Files modified after CONTEXT.md timestamp** - Always check these
 
 ### Quick Status Check
 
@@ -54,7 +80,7 @@ Full protocol: `~/local_workspaces/skills/session-save/SKILL.md`
 ### CONTEXT.md Format (~250 tokens)
 
 ```markdown
-# <project> | YYYY-MM-DD
+# <project> | YYYY-MM-DD HH:MM
 
 ## Goal
 [Current objective - one line]
@@ -76,6 +102,8 @@ Full protocol: `~/local_workspaces/skills/session-save/SKILL.md`
 ## Resume
 Specific actionable instructions to continue.
 ```
+
+**IMPORTANT:** The timestamp in the header is used to determine which files need to be reviewed. Only files modified AFTER this timestamp need to be read on session start.
 
 ### Project Documentation Structure
 
@@ -430,6 +458,62 @@ echo '<!-- A2UI:START --><html>...</html><!-- A2UI:END -->' >> $A2UI_LOG
 ### Trigger Words
 When user says: "show me", "visualize", "display", "chart", "render", "dashboard" → write A2UI HTML to your terminal's log file.
 
+### Auto-Visualization Rules (Understanding Center)
+
+**Automatically generate A2UI visualizations when:**
+
+1. **Creating implementation plans with 3+ steps**
+   - Use the visual-plan skill template (`~/local_workspaces/skills/visual-plan/SKILL.md`)
+   - Show objective, tasks with status, progress bar
+
+2. **Architectural decisions with trade-offs**
+   - Show options as cards with pros/cons
+   - Highlight recommended option
+
+3. **Multi-file refactoring**
+   - Show affected files as a tree/list
+   - Indicate what changes in each file
+
+4. **Error diagnosis with multiple causes**
+   - Show error tree with possible causes
+   - Highlight most likely cause
+
+**Template: Plan Visualization**
+```html
+<!-- A2UI:START -->
+<html>
+<body style="background:#0f172a;color:#e2e8f0;padding:16px;font-family:system-ui">
+<h2 style="color:#f8fafc;margin-bottom:16px">Implementation Plan</h2>
+<div style="background:#1e293b;padding:12px;border-radius:8px;margin-bottom:12px">
+  <div style="color:#64748b;font-size:11px;margin-bottom:4px">OBJECTIVE</div>
+  <div>What we're achieving</div>
+</div>
+<div style="margin-bottom:12px">
+  <div style="color:#64748b;font-size:11px;margin-bottom:8px">TASKS</div>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e293b;border-radius:6px;margin-bottom:4px">
+    <span style="color:#22c55e">✓</span> Completed task
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e293b;border-radius:6px;margin-bottom:4px">
+    <span style="color:#3b82f6">→</span> Active task
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1e293b;border-radius:6px">
+    <span style="color:#64748b">○</span> Pending task
+  </div>
+</div>
+<div style="height:8px;background:#334155;border-radius:4px;overflow:hidden">
+  <div style="width:60%;height:100%;background:linear-gradient(90deg,#22c55e,#3b82f6)"></div>
+</div>
+<div style="text-align:center;color:#94a3b8;font-size:12px;margin-top:8px">3 of 5 completed</div>
+</body>
+</html>
+<!-- A2UI:END -->
+```
+
+**The Understanding Center** (Council panel) is context-aware and can:
+- See what you're currently working on (via CONTEXT.md and terminal output)
+- Answer questions like "What is Claude doing?" with full context
+- Generate visualizations when asked "Show me the plan"
+
 ---
 
 ## GITHUB SKILL
@@ -489,4 +573,81 @@ cd /home/yousuf/local_workspaces/<repo> && git pull
 6. Output URLs:
    - Localhost: `http://localhost:3001`
    - Android: `http://<TAILSCALE_IP>:3001`
+
+---
+
+## MULTI-AGENT COORDINATION
+
+When multiple Claude sessions work on the same project, use the coordination system to avoid conflicts.
+
+### Coordination Files
+```
+~/.triclaude/runtime/coordination/
+├── agents.json     # Who's working on the project
+├── intents.json    # What files they plan to modify
+├── locks.json      # Micro-locks during active edits
+└── events.log      # Audit trail + inter-agent messages
+```
+
+### On Session Start
+1. Check for other agents working on your project:
+```bash
+curl -s "http://localhost:7690/api/coordination/status?projectPath=$PROJECT_PATH" | jq '.agents'
+```
+2. Review intents to see what files others are modifying:
+```bash
+curl -s "http://localhost:7690/api/coordination/status?projectPath=$PROJECT_PATH" | jq '.intents'
+```
+
+### Before Modifying Files
+1. **Declare intent** (expires in 2 minutes):
+```bash
+curl -X POST http://localhost:7690/api/coordination/intent \
+  -H "Content-Type: application/json" \
+  -d '{"terminalId": "YOUR_TERMINAL_ID", "filePath": "/path/to/file.ts", "action": "modify"}'
+```
+
+2. **Check for conflicts** - if another agent has intent on same file, coordinate via events.log or wait
+
+3. **Acquire soft lock** when actively editing (30 sec max):
+```bash
+curl -X POST http://localhost:7690/api/coordination/lock \
+  -H "Content-Type: application/json" \
+  -d '{"terminalId": "YOUR_TERMINAL_ID", "filePath": "/path/to/file.ts"}'
+```
+
+4. **Release lock** immediately after edit:
+```bash
+curl -X POST http://localhost:7690/api/coordination/lock \
+  -H "Content-Type: application/json" \
+  -d '{"terminalId": "YOUR_TERMINAL_ID", "filePath": "/path/to/file.ts", "release": true}'
+```
+
+### Heartbeat (Keep Alive)
+Send heartbeat every 15-30 seconds to show you're active:
+```bash
+curl -X POST http://localhost:7690/api/coordination/heartbeat \
+  -H "Content-Type: application/json" \
+  -d '{"terminalId": "YOUR_TERMINAL_ID", "status": "active", "currentTask": "Implementing feature X"}'
+```
+
+### Communication
+Send messages to other agents via events.log:
+```bash
+curl -X POST http://localhost:7690/api/coordination/message \
+  -H "Content-Type: application/json" \
+  -d '{"fromTerminal": "YOUR_TERMINAL_ID", "message": "Taking over App.tsx refactoring"}'
+```
+
+### Conflict Resolution
+- **First declares intent** → gets priority
+- **If both declare simultaneously** → agent with lower terminal ID wins
+- **Lock conflicts** → WARN but proceed (advisory locks don't block)
+- **Stale agent** → auto-cleaned after 60 seconds without heartbeat
+
+### Important Notes
+- Locks are **advisory only** - they warn but don't block
+- Intents expire in **2 minutes** - re-declare if task takes longer
+- Locks expire in **30 seconds** - for active edit operations only
+- Always check coordination status before starting major file changes
 

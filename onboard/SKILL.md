@@ -24,13 +24,27 @@ cat ~/local_workspaces/<project>/.claude/CONTEXT.md
 
 This ~250 token file has: goal, status, changed files, decisions, blockers, resume instructions.
 
-### Step 3: Quick Git Check
+### Step 3: Check What Changed Since Context
+
+The CONTEXT.md header includes a timestamp: `# <project> | YYYY-MM-DD HH:MM`
 
 ```bash
 cd ~/local_workspaces/<project>
+
+# Find files modified AFTER context was saved
+CONTEXT_FILE=".claude/CONTEXT.md"
+echo "Files modified since context was saved:"
+find src/ -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" \) -newer "$CONTEXT_FILE" 2>/dev/null
+
+# Quick git status
 git status
 git log --oneline -3
 ```
+
+**Decision logic:**
+- **No files modified after context** → Trust CONTEXT.md, ready to work
+- **Files modified** → Read only those specific changed files
+- **Many files modified** → Someone else worked on project, full exploration needed
 
 ### Step 4: Present Summary
 
@@ -55,10 +69,13 @@ Output a concise summary:
 
 | File | When to Read |
 |------|--------------|
+| **Files modified after CONTEXT.md** | ALWAYS - these have changes not in context |
 | `reference/PROJECT.md` | If confused about architecture |
 | `reference/CONVENTIONS.md` | If writing new code |
 | `reference/TROUBLESHOOTING.md` | If hitting known issues |
 | Root `CLAUDE.md` | If exists and project-specific |
+
+**Key principle:** If no files were modified after CONTEXT.md was saved, you have complete context. Skip exploration and start working.
 
 ## If CONTEXT.md Missing
 

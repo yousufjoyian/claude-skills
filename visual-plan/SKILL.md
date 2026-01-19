@@ -1,65 +1,23 @@
 # Visual Plan Skill
 
-**Triggers:** "visualize plan", "show plan", "visual summary", "a2ui plan", "vplan"
-
 ## Purpose
+Generate structured, interactive plan visualizations for the Understanding Center (A2UI panel).
 
-Generate a visual A2UI summary of the current plan, progress, and understanding. Helps user see at a glance what Claude understands about the goal and status.
+## Triggers
+- "visualize plan", "show plan", "vplan"
+- Automatically triggered when creating implementation plans with 3+ steps
 
-## When to Use
+## Output Format
 
-- User wants to verify Claude's understanding
-- Complex multi-step task in progress
-- Before starting implementation (confirm alignment)
-- Midway through work (show progress)
-- After planning phase (visualize the plan)
-
-## A2UI Log Path
-
-The path is **dynamic per-terminal**. Find it in your session startup message:
-
+Write HTML to the A2UI log file. The HTML must be wrapped in markers:
 ```
-A2UI VISUALIZATION: Write HTML to /home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/terminals/<terminal_id>/a2ui_input.log
-```
-
-Extract this path and use it for output.
-
-## Protocol
-
-### Step 1: Identify A2UI Path
-
-Look in your system context for `A2UI VISUALIZATION:` line. Extract the path.
-
-If not found, ask user or check:
-```bash
-ls -la /home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/terminals/*/a2ui_input.log 2>/dev/null | head -1
-```
-
-### Step 2: Gather Context
-
-From conversation and any available sources:
-- **Goal**: What are we trying to achieve?
-- **Status**: What's done, active, pending?
-- **Structure**: Any architecture or file structure relevant?
-- **Decisions**: Key choices made and why?
-- **Blockers**: Any issues?
-- **Next**: Immediate next steps?
-
-### Step 3: Generate Visualization
-
-Use the HTML template below. Adapt sections based on what's relevant.
-
-### Step 4: Write to A2UI
-
-```bash
-cat << 'A2UI_EOF' >> $A2UI_LOG_PATH
 <!-- A2UI:START -->
-[HTML content]
+<!DOCTYPE html>
+<html>...</html>
 <!-- A2UI:END -->
-A2UI_EOF
 ```
 
-## HTML Template
+## Plan Visualization Template
 
 ```html
 <!-- A2UI:START -->
@@ -67,17 +25,16 @@ A2UI_EOF
 <html>
 <head>
 <style>
-* { box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  margin: 0;
-  padding: 16px;
   background: #0f172a;
   color: #e2e8f0;
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  padding: 16px;
+  min-height: 100vh;
 }
-.header {
+.plan-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -85,275 +42,146 @@ body {
   padding-bottom: 12px;
   border-bottom: 1px solid #334155;
 }
-.header-icon { font-size: 20px; }
-.header h1 {
-  margin: 0;
-  font-size: 14px;
-  color: #60a5fa;
+.plan-header h1 {
+  font-size: 16px;
   font-weight: 600;
+  color: #f8fafc;
 }
-.timestamp {
-  margin-left: auto;
-  color: #64748b;
+.plan-header .badge {
   font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #3b82f6;
+  color: white;
 }
 
 .section {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 .section-title {
   font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: #64748b;
   margin-bottom: 8px;
 }
 
-.goal-box {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
-  border: 1px solid #3b82f6;
-  border-radius: 8px;
+.objective {
+  background: #1e293b;
+  border-left: 3px solid #3b82f6;
   padding: 12px;
-  color: #93c5fd;
-  font-weight: 500;
+  border-radius: 0 8px 8px 0;
+  color: #e2e8f0;
 }
 
-.status-list {
+.task-list { list-style: none; }
+.task-item {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.status-item {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: #1e293b;
   border-radius: 6px;
+  margin-bottom: 4px;
 }
-.status-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+.task-status {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
   flex-shrink: 0;
+  margin-top: 2px;
 }
-.status-done { background: #166534; color: #4ade80; }
-.status-active { background: #1d4ed8; color: #60a5fa; }
-.status-pending { background: #334155; color: #94a3b8; }
-.status-text { flex: 1; }
-.status-active-row { border: 1px solid #3b82f6; }
-
-.structure-box {
-  background: #1e293b;
-  border-radius: 8px;
-  padding: 12px;
-  font-family: 'SF Mono', Consolas, monospace;
-  font-size: 11px;
-}
-.folder { color: #fbbf24; }
-.file { color: #34d399; }
-.highlight { color: #f472b6; }
-.dim { color: #64748b; }
-
-.decisions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.decision-item {
-  background: #1e293b;
-  border-left: 3px solid #a78bfa;
-  padding: 8px 12px;
-  border-radius: 0 6px 6px 0;
-}
-.decision-what { color: #e2e8f0; }
-.decision-why { color: #94a3b8; font-size: 11px; margin-top: 2px; }
-
-.next-box {
-  background: linear-gradient(135deg, #14532d 0%, #1e293b 100%);
-  border: 1px solid #22c55e;
-  border-radius: 8px;
-  padding: 12px;
-  color: #86efac;
-}
-
-.blockers-box {
-  background: linear-gradient(135deg, #7f1d1d 0%, #1e293b 100%);
-  border: 1px solid #ef4444;
-  border-radius: 8px;
-  padding: 12px;
-  color: #fca5a5;
-}
+.task-status.done { background: #22c55e; color: white; }
+.task-status.active { background: #3b82f6; color: white; }
+.task-status.pending { background: #334155; color: #64748b; }
+.task-text { flex: 1; }
+.task-text.done { text-decoration: line-through; opacity: 0.6; }
 
 .progress-bar {
-  height: 6px;
+  height: 8px;
   background: #334155;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  margin-top: 8px;
 }
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #22c55e 0%, #3b82f6 100%);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #22c55e, #3b82f6);
+  transition: width 0.3s ease;
+}
+.progress-text {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
 }
 </style>
 </head>
 <body>
-
-<div class="header">
-  <span class="header-icon">📋</span>
-  <h1>Plan Summary</h1>
-  <span class="timestamp"><!-- TIMESTAMP --></span>
+<div class="plan-header">
+  <h1>Implementation Plan</h1>
+  <span class="badge">In Progress</span>
 </div>
 
-<!-- GOAL SECTION -->
 <div class="section">
-  <div class="section-title">Goal</div>
-  <div class="goal-box">
-    <!-- GOAL_TEXT -->
+  <div class="section-title">Objective</div>
+  <div class="objective">
+    <!-- OBJECTIVE: Single sentence describing what we're achieving -->
   </div>
 </div>
 
-<!-- STATUS SECTION -->
 <div class="section">
-  <div class="section-title">Status</div>
-  <div class="status-list">
-    <!-- STATUS_ITEMS -->
-    <!-- Example:
-    <div class="status-item">
-      <span class="status-icon status-done">✓</span>
-      <span class="status-text">Completed task description</span>
-    </div>
-    <div class="status-item status-active-row">
-      <span class="status-icon status-active">→</span>
-      <span class="status-text">Active task description</span>
-    </div>
-    <div class="status-item">
-      <span class="status-icon status-pending">○</span>
-      <span class="status-text">Pending task description</span>
-    </div>
-    -->
-  </div>
+  <div class="section-title">Tasks</div>
+  <ul class="task-list">
+    <li class="task-item">
+      <span class="task-status done">✓</span>
+      <span class="task-text done">Completed task</span>
+    </li>
+    <li class="task-item">
+      <span class="task-status active">→</span>
+      <span class="task-text">Active task</span>
+    </li>
+    <li class="task-item">
+      <span class="task-status pending">○</span>
+      <span class="task-text">Pending task</span>
+    </li>
+  </ul>
+</div>
+
+<div class="section">
+  <div class="section-title">Progress</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: <!-- PROGRESS_PERCENT -->%;"></div>
+    <div class="progress-fill" style="width: 60%"></div>
   </div>
+  <div class="progress-text">3 of 5 tasks completed</div>
 </div>
-
-<!-- STRUCTURE SECTION (optional - include if relevant) -->
-<div class="section">
-  <div class="section-title">Structure</div>
-  <div class="structure-box">
-    <!-- STRUCTURE_CONTENT -->
-  </div>
-</div>
-
-<!-- DECISIONS SECTION (optional - include if decisions were made) -->
-<div class="section">
-  <div class="section-title">Decisions</div>
-  <div class="decisions-list">
-    <!-- DECISION_ITEMS -->
-    <!-- Example:
-    <div class="decision-item">
-      <div class="decision-what">Chose X over Y</div>
-      <div class="decision-why">Because of Z</div>
-    </div>
-    -->
-  </div>
-</div>
-
-<!-- NEXT SECTION -->
-<div class="section">
-  <div class="section-title">Next</div>
-  <div class="next-box">
-    <!-- NEXT_TEXT -->
-  </div>
-</div>
-
-<!-- BLOCKERS SECTION (only if blockers exist) -->
-<!--
-<div class="section">
-  <div class="section-title">Blockers</div>
-  <div class="blockers-box">
-    BLOCKER_TEXT
-  </div>
-</div>
--->
-
 </body>
 </html>
 <!-- A2UI:END -->
 ```
 
-## Section Guidelines
+## Usage Instructions
 
-| Section | When to Include | Content |
-|---------|-----------------|---------|
-| Goal | Always | One clear sentence |
-| Status | Always | Done/Active/Pending items |
-| Structure | If architecture matters | Folder trees, component diagrams |
-| Decisions | If choices were made | What + why (brief) |
-| Next | Always | Immediate actionable step |
-| Blockers | Only if blocked | Issue + workaround if any |
+1. **Automatic Triggering**: When creating a plan with 3+ steps, auto-generate this visualization
+2. **Fill in the sections**:
+   - Objective: One clear sentence
+   - Tasks: Each step with status (done/active/pending)
+   - Progress: Calculate and display completion percentage
 
-## Adaptation Examples
+3. **Write to A2UI log**:
+   The A2UI log path is in your session startup message.
 
-### Simple Task (3 sections)
-- Goal, Status, Next
+## Design Guidelines
 
-### Architecture Work (5 sections)
-- Goal, Status, Structure, Decisions, Next
-
-### Debugging (4 sections)
-- Goal, Status, Structure (showing where issue is), Next
-
-### Blocked (4 sections)
-- Goal, Status, Blockers, Next (workaround)
-
-## Visual Style Rules
-
-1. **Dark theme**: Background `#0f172a`, cards `#1e293b`
-2. **Status colors**: Done=green, Active=blue, Pending=gray
-3. **Accent borders**: Use colored left borders for emphasis
-4. **Progress bar**: Show visual completion percentage
-5. **Monospace**: For code/structure, use `SF Mono, Consolas`
-6. **Compact**: ~400px width, no wasted space
-
-## Example Output
-
-When user says "visualize plan" during a feature implementation:
-
-```
-📋 Plan Summary                           10:45 AM
-
-GOAL
-Add user authentication to the application
-
-STATUS
-✓ Set up auth provider
-✓ Create login form component
-→ Implement token storage
-○ Add protected routes
-○ Create logout functionality
-
-[████████░░░░░░░░] 40%
-
-DECISIONS
-• JWT over sessions — stateless, scales better
-• localStorage over cookies — simpler CORS
-
-NEXT
-Implement token storage in AuthContext using localStorage
-```
-
-## Confirm Output
-
-After writing to A2UI, confirm:
-```
-Visual plan sent to A2UI panel.
-```
+- **Dark theme**: Use #0f172a, #1e293b, #334155 backgrounds
+- **Light text**: #e2e8f0, #f8fafc for content
+- **Accent colors**:
+  - Blue (#3b82f6) for active/primary
+  - Green (#22c55e) for completed
+  - Gray (#64748b) for pending
+  - Red (#dc2626) for blockers
+- **Keep it scannable**: Users should understand progress at a glance
+- **Panel width**: ~400px, so design accordingly
