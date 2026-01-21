@@ -136,13 +136,15 @@ Full protocol: `~/local_workspaces/skills/project-init/SKILL.md`
 | Onboard | `skills/onboard/SKILL.md` | "onboard", "get up to speed" |
 | Project Init | `skills/project-init/SKILL.md` | "init project", "setup docs" |
 | Context Extract | `skills/context-extract/SKILL.md` | "extract context", "dump context" |
+| Context Manager | `skills/context-manager/SKILL.md` | "compile context", "cms compile", "cms update" |
 | Visual Plan | `skills/visual-plan/SKILL.md` | "visualize plan", "show plan", "vplan" |
 | Synopsis | `skills/synopsis/SKILL.md` | "show synopsis", "synopsis", "session summary" |
 | A2UI Embed | `skills/a2ui-embed/SKILL.md` | "show in a2ui", "visualize", "embed" |
 
-**Save Context vs Context Extract:**
-- `save context`: Quick ~250 token summary to `CONTEXT.md` (use this!)
-- `context-extract`: Full conversation dump to `context/` (verbose, rarely needed)
+**When to use which context skill:**
+- `save context`: Quick ~250 token human handoff to `CONTEXT.md`
+- `context-extract`: Full conversation dump to `context/` (verbose history)
+- `context-manager`: Compiled artifacts for stateless agent spawning (BOOT + DELTA + features)
 
 ---
 
