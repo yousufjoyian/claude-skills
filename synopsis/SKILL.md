@@ -1,71 +1,68 @@
 ---
 name: synopsis
-description: Generate a manager-focused synopsis explaining recent work at multiple levels
+description: Generate a manager-focused synopsis with current context - ALWAYS includes save button
 ---
 
 # Synopsis Skill
 
-Generate a **manager-focused synopsis** that explains the most recent work clearly. Written for an intelligent person who isn't deep in the technical details but wants to understand what happened and why it matters.
+Generate a **manager-focused synopsis** that explains what's happening NOW and recent work.
+
+## MANDATORY ELEMENTS (NEVER SKIP)
+
+Before outputting HTML, verify ALL of these are present:
+
+| Element | Required | Check |
+|---------|----------|-------|
+| **Current Context box** | YES | Blue box at top showing what we're doing RIGHT NOW |
+| **Hero section** | YES | Most recent completed task |
+| **Save button** | YES | Orange button at bottom with `exportSynopsis()` |
+| **Project path in JS** | YES | Replace `[PROJECT_PATH]` with actual path |
+
+**If any element is missing, the synopsis is INVALID. Do not output.**
 
 ## Trigger Phrases
 
-- "show synopsis" - Display in A2UI panel
-- "synopsis" - Display in A2UI panel
-- "show status" - Display in A2UI panel
-- "session summary" - Display in A2UI panel
+- "show synopsis" / "synopsis" / "session summary" - Display in A2UI panel
 - "export synopsis" - Display AND save to project folder
 
-## Core Principle
+## Structure (Top to Bottom)
 
-**Pretend you're explaining to your manager.** They're smart but not in the weeds. Lead with:
-1. What just happened (the headline)
-2. What changed (plain English)
-3. Why it matters (impact/value)
-4. Technical details (optional, for those who want to dig in)
-
-## Three-Level Structure
-
-| Tab | Purpose | Tone |
-|-----|---------|------|
-| What Changed | List of changes with clear descriptions | Plain English, action-focused |
-| Why It Matters | Business/practical impact | Value-oriented, benefits |
-| Technical | Code details, files, implementation | For devs who want specifics |
-
-## Writing Guidelines
-
-### DO:
-- Lead with the most recent task as a hero banner
-- Use plain English: "Fixed the save button" not "Resolved HTTP/HTTPS protocol mismatch"
-- Show impact with arrows: "→ Now works on mobile"
-- Keep each item to 1-2 sentences
-- Group related changes together
-
-### DON'T:
-- Start with old context or project overview
-- Use jargon without explanation
-- List files without saying what changed
-- Assume reader knows the codebase
-- Bury the current task under history
+1. **CURRENT CONTEXT** (blue box) - What is actively happening right now
+2. **HERO** (gradient box) - Most recent completed task
+3. **TABS** - What Changed / Why It Matters / Technical
+4. **SAVE BUTTON** (orange) - ALWAYS present at bottom
 
 ## Execution Steps
 
-### Step 1: Identify Current Task
+### Step 1: Gather Current Context
 
-What did we JUST do? This is the hero. Pull from:
-- Current conversation (most recent work)
-- What the user asked for
-- What was actually implemented
-
-### Step 2: Gather Supporting Context
+Ask yourself: **What are we doing RIGHT NOW?**
+- What task is in progress?
+- What is the user trying to accomplish?
+- What's the immediate next step?
 
 ```bash
+# Get project context
 cat <project>/.claude/CONTEXT.md 2>/dev/null
 git status --short
 git log --oneline -3
 ```
 
-### Step 3: Discover Active Terminal
+### Step 2: Identify Recent Completed Work
 
+What did we JUST finish? Pull from:
+- Current conversation
+- What the user asked for
+- What was actually implemented
+
+### Step 3: Get A2UI Log Path
+
+Use the path from your terminal startup message:
+```
+A2UI VISUALIZATION: Write HTML to /home/yousuf/GoogleDrive/PROJECTS/.triclaude/runtime/terminals/<terminal_id>/a2ui_input.log
+```
+
+Or discover dynamically:
 ```bash
 python3 << 'PY'
 import json, urllib.request
@@ -83,6 +80,8 @@ PY
 
 ### Step 4: Generate Synopsis HTML
 
+**CRITICAL: Copy the ENTIRE template below. Do not skip any section.**
+
 ```bash
 cat << 'A2UI_EOF' >> $A2UI_LOG
 <!-- A2UI:START -->
@@ -92,7 +91,14 @@ cat << 'A2UI_EOF' >> $A2UI_LOG
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0f172a;color:#e2e8f0;font-family:system-ui;font-size:12px;padding:16px;line-height:1.5}
-.hero{background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:16px;border-radius:10px;border-left:4px solid #3b82f6;margin-bottom:16px}
+.context{background:#1e3a5f;padding:14px;border-radius:10px;border:2px solid #3b82f6;margin-bottom:14px}
+.context-label{font-size:10px;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.context-label::before{content:"";width:8px;height:8px;background:#3b82f6;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.context h2{font-size:14px;color:#f8fafc;margin-bottom:4px}
+.context p{color:#94a3b8;font-size:12px}
+.context .next{margin-top:8px;padding-top:8px;border-top:1px solid #334155;font-size:11px;color:#60a5fa}
+.hero{background:linear-gradient(135deg,#1e3a5f,#0f172a);padding:16px;border-radius:10px;border-left:4px solid #22c55e;margin-bottom:16px}
 .hero h1{font-size:15px;color:#f8fafc;margin-bottom:8px}
 .hero p{color:#94a3b8;font-size:13px}
 .status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;margin-bottom:8px}
@@ -121,12 +127,19 @@ body{background:#0f172a;color:#e2e8f0;font-family:system-ui;font-size:12px;paddi
 </head>
 <body>
 
-<!-- HERO: Most recent task, front and center -->
+<!-- ========== CURRENT CONTEXT (MANDATORY) ========== -->
+<!-- This section shows what is happening RIGHT NOW -->
+<div class="context">
+<div class="context-label">Current Context</div>
+<h2>[WHAT_WE_ARE_DOING_NOW]</h2>
+<p>[Brief description of active task - what is the user trying to accomplish?]</p>
+<div class="next">Next → [Immediate next step]</div>
+</div>
+
+<!-- ========== HERO: Recent completed work ========== -->
 <div class="hero">
 <span class="status done">✓ JUST COMPLETED</span>
-<!-- Or use: <span class="status active">→ IN PROGRESS</span> -->
-<!-- Or use: <span class="status blocked">⚠ BLOCKED</span> -->
-<h1>[TASK_HEADLINE]</h1>
+<h1>[COMPLETED_TASK_HEADLINE]</h1>
 <p>[ONE_SENTENCE_SUMMARY - plain English, what did we do and why]</p>
 </div>
 
@@ -206,8 +219,10 @@ body{background:#0f172a;color:#e2e8f0;font-family:system-ui;font-size:12px;paddi
 </div>
 </div>
 
+<!-- ========== SAVE BUTTON (MANDATORY - NEVER REMOVE) ========== -->
 <button class="export-btn" onclick="exportSynopsis()">📥 Save This Synopsis</button>
 
+<!-- ========== JAVASCRIPT (MANDATORY - NEVER REMOVE) ========== -->
 <script>
 function showTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -294,3 +309,38 @@ Synopses save to:
 The `getApiUrl()` function handles both:
 - **HTTP** (localhost:3001): Direct call to port 7690
 - **HTTPS** (Tailscale:3443): Routes through Caddy proxy at `/api/*`
+
+---
+
+## FINAL VERIFICATION (Run Before Output)
+
+**STOP. Before writing to A2UI, verify:**
+
+```
+□ Current Context box present? (blue box with pulsing dot)
+□ Hero section present? (completed task)
+□ Save button present? (<button class="export-btn">)
+□ [PROJECT_PATH] replaced with actual path?
+□ All [PLACEHOLDERS] filled with real content?
+```
+
+**If ANY checkbox fails → Do NOT output. Fix first.**
+
+### Common Mistakes to Avoid
+
+| Mistake | Why It's Bad | Fix |
+|---------|--------------|-----|
+| Skipping Current Context | User loses track of where they are | Always include - even if just "Reviewing code" |
+| Missing save button | User can't export the synopsis | Copy the ENTIRE template including `<button>` and `<script>` |
+| Generic placeholders | "[TASK_HEADLINE]" is useless | Replace with actual content from conversation |
+| Wrong project path | Save fails silently | Use actual path like `/home/yousuf/local_workspaces/triclaude` |
+
+### Minimal Valid Synopsis
+
+At minimum, a valid synopsis MUST have:
+1. `<div class="context">` with real content
+2. `<div class="hero">` with real content
+3. `<button class="export-btn">` with working `exportSynopsis()`
+4. `<script>` block with `showTab()`, `getApiUrl()`, `exportSynopsis()`
+
+**No exceptions.**
